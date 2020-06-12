@@ -2,13 +2,7 @@ package http
 
 import (
 	"github.com/disintegration/imaging"
-	"github.com/filebrowser/filebrowser/v2/errors"
 	"github.com/filebrowser/filebrowser/v2/files"
-	"image"
-	"image/gif"
-	"image/jpeg"
-	"image/png"
-	"mime"
 	"net/http"
 	"net/url"
 )
@@ -54,39 +48,11 @@ func thumbnailFileHandler(w http.ResponseWriter, r *http.Request, file *files.Fi
 	if err != nil {
 		return errToStatus(err), err
 	}
-	dstImg := fitResizeImage(srcImg)
-	w.Header().Add("Content-Type", mime.TypeByExtension(file.Extension))
-	err = func() error {
-		switch file.Extension {
-		case ".jpg", ".jpeg":
-			return jpeg.Encode(w, dstImg, nil)
-		case ".png":
-			return png.Encode(w, dstImg)
-		case ".gif":
-			return gif.Encode(w, dstImg, nil)
-		default:
-			return errors.ErrNotExist
-		}
-	}()
+	format, err := imaging.FormatFromExtension(file.Extension)
 	if err != nil {
-		return errToStatus(err), err
+		return http.StatusNotFound, err
 	}
+	dstImage := imaging.Resize(srcImg, srcImg.Bounds().Dx(), 0, imaging.NearestNeighbor)
+	imaging.Encode(w, dstImage, format)
 	return 0, nil
-}
-
-const maxSize = 1080
-
-func fitResizeImage(srcImage image.Image) image.Image {
-	width := srcImage.Bounds().Dx()
-	height := srcImage.Bounds().Dy()
-	if width > maxSize && width > height {
-		width = maxSize
-		height = 0
-	} else if height > maxSize && height > width {
-		width = 0
-		height = maxSize
-	} else {
-		return srcImage
-	}
-	return imaging.Resize(srcImage, width, height, imaging.NearestNeighbor)
 }

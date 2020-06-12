@@ -46,7 +46,7 @@ export default {
     }
   },
   computed: {
-    ...mapState(['selected', 'req', 'jwt']),
+    ...mapState(['selected', 'req', 'user', 'jwt']),
     ...mapGetters(['selectedCount']),
     isSelected() {
       return this.selected.indexOf(this.index) !== -1
